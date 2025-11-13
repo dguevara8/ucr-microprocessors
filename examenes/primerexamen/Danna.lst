@@ -1,0 +1,93 @@
+
+as12, an absolute assembler for Motorola MCU's, version 1.2h
+
+                        ;*******************************************************************************
+                        ;                        PROGRAMA EXAMEN
+                        ;*******************************************************************************
+                        ;        V1.0
+                        ;        AUTOR: Danna Guevara Quesada. C23562
+                        
+                        ; Descripción:
+                        ;*******************************************************************************
+                        ;                        DECLARACIÓN DE ESTRUCTURAS DE DATOS
+                        ;*******************************************************************************
+                        
+1000                                    ORG $1000
+1000                    Banderas:       ds 1
+1001                    Offset:         ds 1
+                        
+0001                    Par: EQU $01
+                        
+1010                                    ORG $1010
+1010 78 96 67 55 23 31  Datos_BCD:      dB $78, $96, $67, $55, $23, $31, $25, $46, $18, $50, $15, $FF
+     25 46 18 50 15 ff
+                        
+1020                                    ORG $1020
+1020                    Ordenados:
+                        
+                        ;*******************************************************************************
+                        ;                       PROGRAMA PRINCIPAL
+                        ;*******************************************************************************
+                        
+2000                                    ORG $2000
+                        
+2000 cf 40 00                           Lds #$4000
+2003 cd 10 20                           Ldy #Ordenados
+2006 ce 10 10                           Ldx #Datos_BCD
+2009 c7                                 Clrb
+200a 1c 10 00 01                        Bset Banderas,Par
+                                        
+200e a6 e5              Inicio          Ldaa B,X
+2010 52                                 Incb
+2011 7b 10 01                           Stab Offset
+                        
+2014 81 ff                              Cmpa #$FF
+2016 27 23                              Beq Pares
+2018 16 20 49                           Jsr BCDaBIN
+201b 1e 10 00 01 0c                     Brset Banderas,Par,Siga
+2020 85 01                              Bita #$01
+2022 27 12                              Beq Off
+2024 81 32                              Cmpa #50
+2026 24 0e                              Bhs Off
+                        
+2028 6a 70              Guardar         Staa 1,Y+
+202a 20 0a                              Bra Off
+                                        
+202c 85 01              Siga            Bita #$01
+202e 26 06                              Bne Off
+2030 81 32                              Cmpa #50
+2032 25 02                              Blo Off
+2034 20 f2                              Bra Guardar
+                                        
+2036 f6 10 01           Off             Ldab Offset
+2039 20 d3                              Bra Inicio
+                                        
+203b 1e 10 00 01 02     Pares           Brset Banderas,Par,Siga2
+2040 20 fe                              Bra *
+                        
+2042 1d 10 00 01        Siga2           Bclr Banderas,Par
+2046 c7                                 Clrb
+2047 20 c5                              Bra Inicio
+                        
+                        
+                                        
+                        ;*******************************************************************************
+                        ;                       SUBRUTINA BCDaBIN
+                        ;*******************************************************************************
+                        
+2049 36                 BCDaBIN         Psha
+204a 84 f0                              Anda #$F0
+204c 44                                 Lsra
+204d 18 0e                              Tab
+204f 54                                 Lsrb
+2050 54                                 Lsrb
+2051 18 06                              Aba
+                                        
+2053 33                                 Pulb
+2054 c4 0f                              Andb #$0F
+2056 18 06                              Aba
+2058 3d                                 Rts
+
+Executed: Sat Oct 04 12:21:04 2025
+Total cycles: 99, Total bytes: 101
+Total errors: 0, Total warnings: 0

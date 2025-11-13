@@ -1,0 +1,353 @@
+
+as12, an absolute assembler for Motorola MCU's, version 1.2h
+
+                        ;*******************************************************************************
+                        ;                        PROGRAMA IoT
+                        ;*******************************************************************************
+                        ;        V1.6.16
+                        ;        AUTOR: Danna Guevara Quesada. C23562
+                        
+                        ; Descripción:   Este programa se encarga de implementar 4 subrutinas
+                        ;                en general, se encarga de tomar datos en ASCII de una tabla
+                        ;                generada en tiempo de ensamblado, y los convierte a datos
+                        ;                binario para separarlos en tres grupos de nibbles, para
+                        ;                imprimirlos en tres tablas distintas: Nibble_Up, Nibble_Med
+                        ;                y Nibble_Low
+                        ;
+                        ;*******************************************************************************
+                        ;                        DECLARACIÓN DE ESTRUCTURAS DE DATOS
+                        ;*******************************************************************************
+                        
+3bff                    SP:             EQU $3BFF
+0000                    NULL:           EQU $00
+000d                    CR:             EQU $0D
+000a                    LF:             EQU $0A
+ee88                    PrintF:         EQU $EE88
+ee84                    GetChar:        EQU $EE84
+ee86                    PutChar:        EQU $EE86
+1600                    Datos_Bin       EQU $1600
+                        
+1000                                    ORG $1000
+1000                    Cant:           ds 1
+1001                    Cont:           ds 1
+1002                    Offset:         ds 1
+1003                    Acc:            ds 2
+                        
+1010                                    ORG $1010
+1010                    Nibble_UP:      ds 2
+1012                    Nibble_MED:     ds 2
+1014                    Nibble_LOW:     ds 2
+                        
+1030                                    ORG $1030
+1030 49 6e 67 72 65 73  MSG1    FCC "Ingrese el valor de cant (entre 1 y 50):"
+     65 20 65 6c 20 76
+     61 6c 6f 72 20 64
+     65 20 63 61 6e 74
+     20 28 65 6e 74 72
+     65 20 31 20 79 20
+     35 30 29 3a
+1058 0a 00                      dB LF, NULL
+105a 0d 0a 0d 0a 0d 0a  MSG2    dB CR, LF, CR, LF, CR, LF
+1060 43 61 6e 74 69 64          FCC "Cantidad de valores procesados: %u"
+     61 64 20 64 65 20
+     76 61 6c 6f 72 65
+     73 20 70 72 6f 63
+     65 73 61 64 6f 73
+     3a 20 25 75
+1082 0d 0a 0d 0a 0d 0a          dB CR, LF, CR, LF, CR, LF, NULL
+     00
+1089 4e 69 62 62 6c 65  MSG3    FCC "Nibble_UP:"
+     5f 55 50 3a
+1093 00                         dB NULL
+1094 4e 69 62 62 6c 65  MSG4    FCC "Nibble_MED:"
+     5f 4d 45 44 3a
+109f 00                         dB NULL
+10a0 4e 69 62 62 6c 65  MSG5    FCC "Nibble_LOW:"
+     5f 4c 4f 57 3a
+10ab 00                         dB NULL
+10ac 30 25 58 2c 20     MSG6    FCC "0%X, "
+10b1 00                         dB NULL
+10b2 30 25 58 20        MSG7    FCC "0%X "
+10b6 0d 0a 0d 0a 0d 0a          dB CR, LF, CR, LF, CR, LF, NULL
+     00
+                        
+1500                                    ORG $1500
+1500 30 31 32 39        Datos_IoT       FCC "0129"
+1504 30 37 32 39                        FCC "0729"
+1508 33 39 35 34                        FCC "3954"
+150c 31 38 37 35                        FCC "1875"
+1510 30 30 37 35                        FCC "0075"
+                        
+1514 31 35 33 36                        FCC "1536"
+1518 30 35 33 34                        FCC "0534"
+151c 32 37 35 35                        FCC "2755"
+1520 32 30 32 31                        FCC "2021"
+1524 30 33 38 39                        FCC "0389"
+                        
+1528 30 30 30 30                        FCC "0000"
+152c 31 33 32 39                        FCC "1329"
+1530 31 37 38 33                        FCC "1783"
+1534 30 30 30 39                        FCC "0009"
+1538 32 38 30 34                        FCC "2804"
+                        
+153c 30 30 36 34                        FCC "0064"
+1540 30 31 32 38                        FCC "0128"
+1544 30 32 35 36                        FCC "0256"
+1548 30 35 31 32                        FCC "0512"
+154c 34 30 39 35                        FCC "4095"
+                        
+                        ;*******************************************************************************
+                        ;                       PROGRAMA PRINCIPAL
+                        ;*******************************************************************************
+                        
+2000                                    ORG $2000
+                        
+2000 cf 3b ff                           Lds #SP
+2003 16 20 2e                           Jsr GetCant
+2006 ce 15 00                           Ldx #Datos_IoT
+2009 cd 16 00                           Ldy #Datos_Bin
+200c 35                                 Pshy
+200d 34                                 Pshx
+200e 16 20 90                           Jsr AsciiBIN
+2011 ce 16 00                           Ldx #Datos_Bin
+2014 16 21 05                           Jsr Mover
+2017 18 03 16 30 10 10                  Movw #$1630,Nibble_UP
+201d 18 03 16 60 10 12                  Movw #$1660,Nibble_MED
+2023 18 03 16 90 10 14                  Movw #$1690,Nibble_LOW
+2029 16 21 2d                           Jsr Imprimir
+202c 20 fe                              Bra *
+                        
+                        ;*******************************************************************************
+                        ;                       SUBRUTINA GET_CANT
+                        ;*******************************************************************************
+                        
+202e 79 10 00           GetCant         Clr Cant
+2031 cc 10 30                           Ldd #MSG1
+2034 cd 00 00                           Ldy #$0
+2037 15 eb ee 88                        Jsr [PrintF,y]
+                        
+203b cd 00 00           Primertecla     Ldy #$0
+203e 15 eb ee 84                        Jsr [GetChar,y]
+2042 c1 30                              Cmpb #$30
+2044 25 f5                              Blo Primertecla
+2046 c1 35                              Cmpb #$35
+2048 22 f1                              Bhi Primertecla
+204a cd 00 00                           Ldy #$0
+204d 15 eb ee 86                        Jsr [PutChar,y]
+2051 c0 30                              Subb #$30
+2053 86 0a                              Ldaa #$0A
+2055 12                                 Mul
+2056 7b 10 00                           Stab Cant
+                        
+2059 cd 00 00           Segundatecla    Ldy #$0
+205c 15 eb ee 84                        Jsr [GetChar,y]
+2060 c1 30                              Cmpb #$30
+2062 25 f5                              Blo Segundatecla
+2064 c1 39                              Cmpb #$39
+2066 22 f1                              Bhi Segundatecla
+2068 b6 10 00                           Ldaa Cant
+206b 27 06                              Beq Es0
+206d 81 32                              Cmpa #50
+206f 27 08                              Beq Es50
+2071 20 0c                              Bra Valor
+                        
+2073 c1 30              Es0             Cmpb #$30
+2075 27 e2                              Beq Segundatecla
+2077 20 06                              Bra Valor
+                        
+2079 c1 30              Es50            Cmpb #$30
+207b 27 02                              Beq Valor
+207d 20 da                              Bra Segundatecla
+                        
+207f cd 00 00           Valor           Ldy #$0
+2082 87                                 Clra
+2083 15 eb ee 86                        Jsr [PutChar,y]
+2087 c0 30                              Subb #$30
+2089 fb 10 00                           Addb Cant
+208c 7b 10 00                           Stab Cant
+208f 3d                                 Rts
+                        
+                        ;*******************************************************************************
+                        ;                       SUBRUTINA ASCII_BIN
+                        ;*******************************************************************************
+                        
+2090 1b 82              AsciiBIN        Leas 2,SP
+2092 30                                 Pulx
+2093 31                                 Puly
+2094 79 10 01                           Clr Cont
+2097 79 10 02                           Clr Offset
+                        
+209a b6 10 02           Inicio          Ldaa Offset
+209d e6 e4                              Ldab A,X
+209f 42                                 Inca
+20a0 7a 10 02                           Staa Offset
+20a3 c0 30                              Subb #$30
+20a5 86 fa                              Ldaa #$FA
+20a7 12                                 Mul
+20a8 59                                 Lsld
+20a9 59                                 Lsld
+20aa 7c 10 03                           Std Acc
+                        
+20ad b6 10 02                           Ldaa Offset
+20b0 e6 e4                              Ldab A,X
+20b2 42                                 Inca
+20b3 7a 10 02                           Staa Offset
+20b6 c0 30                              Subb #$30
+20b8 86 64                              Ldaa #$64
+20ba 12                                 Mul
+20bb f3 10 03                           Addd Acc
+20be 7c 10 03                           Std Acc
+                        
+20c1 b6 10 02                           Ldaa Offset
+20c4 e6 e4                              Ldab A,X
+20c6 42                                 Inca
+20c7 7a 10 02                           Staa Offset
+20ca c0 30                              Subb #$30
+20cc 86 0a                              Ldaa #$0A
+20ce 12                                 Mul
+20cf f3 10 03                           Addd Acc
+20d2 7c 10 03                           Std Acc
+                        
+20d5 b6 10 02                           Ldaa Offset
+20d8 e6 e4                              Ldab A,X
+20da 42                                 Inca
+20db 7a 10 02                           Staa Offset
+20de c0 30                              Subb #$30
+20e0 86 00                              Ldaa #$0
+20e2 f3 10 03                           Addd Acc
+20e5 7c 10 03                           Std Acc
+                        
+20e8 b6 10 01                           Ldaa Cont
+20eb 18 01 ec 10 03                     Movw Acc,A,Y
+20f0 72 10 01                           Inc Cont
+20f3 72 10 01                           Inc Cont
+20f6 b6 10 01                           Ldaa Cont
+20f9 44                                 Lsra
+20fa b1 10 00                           Cmpa Cant
+20fd 26 9b                              Bne Inicio
+20ff 74 10 01                           Lsr Cont
+2102 1b 9a                              Leas -6,SP
+2104 3d                                 Rts
+                        
+                        ;*******************************************************************************
+                        ;                       SUBRUTINA MOVER
+                        ;*******************************************************************************
+                        
+2105 87                 Mover           Clra
+2106 c7                                 Clrb
+                        
+2107 a6 00              Loop            Ldaa 0,X
+2109 fd 10 10                           Ldy Nibble_UP
+210c 6a ed                              Staa B,Y
+                        
+210e a6 01                              Ldaa 1,X
+2110 84 f0                              Anda #$F0
+2112 44                                 Lsra
+2113 44                         	Lsra
+2114 44                                 Lsra
+2115 44                                 Lsra
+2116 fd 10 12                           Ldy Nibble_MED
+2119 6a ed                              Staa B,Y
+                        
+211b a6 01                              Ldaa 1,X
+211d 84 0f                              Anda #$0F
+211f fd 10 14                           Ldy Nibble_LOW
+2122 6a ed                              Staa B,Y
+                        
+2124 1a 02                              Leax 2,X
+2126 52                                 Incb
+2127 f1 10 00                           Cmpb Cant
+212a 26 db                              Bne Loop
+                        
+212c 3d                                 Rts
+                        
+                        ;*******************************************************************************
+                        ;                       SUBRUTINA IMPRIMIR
+                        ;*******************************************************************************
+                        
+212d ce 00 00           IMPRIMIR 	Ldx #0
+2130 cc 00 00           		Ldd #0
+2133 f6 10 01                           Ldab Cont
+2136 3b                                 Pshd
+2137 cc 10 5a                           Ldd #MSG2
+213a 15 e3 ee 88                        Jsr [PrintF,X]
+213e 3a                                 Puld
+                        
+213f c6 00                              Ldab #0
+2141 37                                 Pshb
+2142 86 00                              Ldaa #0
+2144 36                                 Psha
+                        
+2145 fd 10 10                           Ldy Nibble_UP
+2148 35                                 Pshy
+2149 ce 00 00                           Ldx #0
+214c cc 10 89                           Ldd #MSG3
+214f 15 e3 ee 88                        Jsr [PrintF,X]
+                        
+2153 cc 00 00           Lazo            Ldd #0
+2156 31                 		Puly
+2157 e6 70                              Ldab 1,Y+
+2159 35                                 Pshy
+215a 3b                                 Pshd
+215b ce 00 00                           Ldx #0
+215e cc 10 ac                           Ldd #MSG6
+2161 15 e3 ee 88                        Jsr [PrintF,X]
+2165 3a                                 Puld
+                        
+2166 31                                 Puly
+2167 32                                 Pula
+2168 42                                 Inca
+2169 36                                 Psha
+216a 35                                 Pshy
+216b 73 10 00                           Dec Cant
+216e b1 10 00                           Cmpa Cant
+2171 27 05                              Beq Last
+2173 72 10 00                           Inc Cant
+2176 20 db                              Bra Lazo
+                        
+2178 72 10 00           Last            Inc Cant
+217b 31                 		Puly
+217c 32                                 Pula
+217d cc 00 00                           Ldd #0
+2180 e6 70                              Ldab 1,Y+
+2182 3b                                 Pshd
+2183 ce 00 00                           Ldx #0
+2186 cc 10 b2                           Ldd #MSG7
+2189 15 e3 ee 88                        Jsr [PrintF,X]
+218d 3a                                 Puld
+                        
+218e 33                                 Pulb
+218f 52                                 Incb
+2190 37                                 Pshb
+2191 86 00                              Ldaa #0
+2193 36                                 Psha
+2194 c1 03                              Cmpb #3
+2196 27 26                              Beq Final
+2198 c1 02                              Cmpb #2
+219a 27 12                              Beq Valorbajo
+219c 20 00                              Bra Valormed
+                        
+219e fd 10 12           Valormed        Ldy Nibble_MED
+21a1 35                                 Pshy
+21a2 ce 00 00                           Ldx #0
+21a5 cc 10 94                           Ldd #MSG4
+21a8 15 e3 ee 88                        Jsr [PrintF,X]
+21ac 20 a5                              Bra Lazo
+                        
+                        
+21ae fd 10 14           Valorbajo       Ldy Nibble_LOW
+21b1 35                                 Pshy
+21b2 ce 00 00                           Ldx #0
+21b5 cc 10 a0                           Ldd #MSG5
+21b8 15 e3 ee 88                        Jsr [PrintF,X]
+21bc 20 95                              Bra Lazo
+                        
+21be 32                 Final           Pula
+21bf 33                                 Pulb
+21c0 3d                                 Rts
+                        
+                        
+
+Executed: Fri Oct 03 04:38:59 2025
+Total cycles: 530, Total bytes: 670
+Total errors: 0, Total warnings: 0
